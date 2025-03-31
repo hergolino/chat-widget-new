@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Twitch Chat Widget</title>
+  <style>
+    body {
+      margin: 0;
+      background: transparent;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    #chat {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column-reverse;
+      padding: 10px;
+      color: white;
+    }
+    .message {
+      margin: 5px 0;
+      padding: 10px;
+      background-color: rgba(0, 0, 0, 0.6);
+      border-radius: 12px;
+      font-size: 16px;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+  </style>
+</head>
+<body>
+  <div id="chat"></div>
+
+  <script>
+    const chat = document.getElementById('chat');
+    const socket = new WebSocket('wss://irc-ws.chat.twitch.tv:443');
+
+    const username = 'dein_botname'; // z.B. "justinfan123" für anonyme Verbindung
+    const oauth = 'oauth:dein_oauth_token'; // siehe Hinweis unten
+    const channel = 'dein_channelname'; // z.B. "meinestream"
+
+    socket.onopen = () => {
+      socket.send('PASS ' + oauth);
+      socket.send('NICK ' + username);
+      socket.send('JOIN #' + channel);
+    };
+
+    socket.onmessage = (event) => {
+      const message = event.data;
+      if (message.includes('PRIVMSG')) {
+        const user = message.match(/^:([^!]+)!/)[1];
+        const text = message.split('PRIVMSG')[1].split(':')[1];
+
+        const msg = document.createElement('div');
+        msg.className = 'message';
+        msg.textContent = `${user}: ${text}`;
+        chat.prepend(msg);
+
+        // Begrenze auf 20 Nachrichten
+        if (chat.children.length > 20) {
+          chat.removeChild(chat.lastChild);
+        }
+      }
+    };
+  </script>
+</body>
+</html>
